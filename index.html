@@ -143,6 +143,16 @@ input.fld[type=checkbox],input.fld[type=radio]{accent-color:#2a44d4;background:t
   .docinfo{margin-left:0}
 }
 @media (prefers-reduced-motion:reduce){.side{transition:none}}
+#printArea{display:none}
+@media print{
+  @page{margin:0}
+  html,body{height:auto!important;overflow:visible!important;background:#fff!important}
+  :root{padding:0!important}
+  .app,.toast,.busy,.scrim,.ghost{display:none!important}
+  #printArea{display:block}
+  #printArea img{display:block;width:100%;height:100vh;object-fit:contain;break-after:page;page-break-after:always}
+  #printArea img:last-child{break-after:auto;page-break-after:auto}
+}
 </style>
 </head>
 <body>
@@ -173,6 +183,7 @@ input.fld[type=checkbox],input.fld[type=radio]{accent-color:#2a44d4;background:t
       <button class="btn icon" id="bZi" aria-label="Mărește">+</button>
     </div>
     <div class="spacer"></div>
+    <button class="btn" id="bPrint" title="Printează documentul cu modificările"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v7H7z"/></svg><span class="wide-label">Printează</span></button>
     <button class="btn primary" id="bSave"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Salvează PDF</button>
   </header>
 
@@ -210,6 +221,7 @@ input.fld[type=checkbox],input.fld[type=radio]{accent-color:#2a44d4;background:t
       <button class="btn" id="sigClear">Golește</button><button class="btn" id="sigCancel">Renunță</button><button class="btn primary" id="sigUse">Plasează semnătura</button></div>
   </div>
 </div>
+<div id="printArea" aria-hidden="true"></div>
 <div class="toast" id="toast" hidden></div>
 <div class="busy" id="busy" hidden><span id="busyT">Se lucrează…</span></div>
 
@@ -835,6 +847,38 @@ $("#bSave").onclick = async () => {
   if (!dl) { toast("Salvarea nu e disponibilă în această vizualizare. Deschide pagina în aplicația Claude sau pe claude.ai."); return; }
   try { await dl.save({ filename, data: new Blob([res.bytes], { type: "application/pdf" }) }); toast(res.formIssues ? "PDF salvat. Unele câmpuri de formular n-au putut fi completate." : "PDF salvat."); }
   catch (e) { if (e && e.code === "declined") toast("Salvarea a fost anulată."); else if (e && e.code === "rate_limited") toast("O fereastră de salvare e deja deschisă."); else toast("Nu am putut salva: " + ((e && e.message) || "eroare necunoscută")); }
+};
+
+// ---------- print ----------
+const inViewer = !!(window.claude && window.claude.use);
+if (inViewer) $("#bPrint").hidden = true; // the Claude viewer blocks the print dialog; save the PDF and print it instead
+let printUrls = [];
+function clearPrint() { printUrls.forEach(u => URL.revokeObjectURL(u)); printUrls = []; $("#printArea").innerHTML = ""; }
+window.addEventListener("afterprint", () => setTimeout(clearPrint, 500));
+$("#bPrint").onclick = async () => {
+  if (editing) finishEdit();
+  if (!S.pages.length) return;
+  busy(true, "Se pregătește printarea…");
+  try {
+    clearPrint();
+    const { bytes } = await buildPdf();
+    const doc = await pdfjsLib.getDocument({ data: bytes }).promise;
+    const area = $("#printArea"); const imgs = [];
+    for (let i = 1; i <= doc.numPages; i++) {
+      busy(true, "Se pregătește printarea… pagina " + i + " din " + doc.numPages);
+      const pg = await doc.getPage(i); const vp = pg.getViewport({ scale: 200 / 72 });
+      const c = document.createElement("canvas"); c.width = Math.floor(vp.width); c.height = Math.floor(vp.height);
+      const ctx = c.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
+      await pg.render({ canvasContext: ctx, viewport: vp }).promise;
+      const blob = await new Promise(r => c.toBlob(r, "image/jpeg", 0.92)); c.width = c.height = 0;
+      const url = URL.createObjectURL(blob); printUrls.push(url);
+      const img = new Image(); img.src = url; img.alt = ""; area.append(img); imgs.push(img);
+    }
+    await Promise.all(imgs.map(im => im.decode().catch(() => {})));
+    doc.destroy();
+    busy(false);
+    window.print();
+  } catch (e) { console.error(e); busy(false); toast("Nu am putut pregăti printarea: " + (e.message || e)); }
 };
 
 // ---------- toolbar & properties ----------

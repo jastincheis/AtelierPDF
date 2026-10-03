@@ -73,7 +73,10 @@ Butoane utile din bara de sus:
 - **Unește PDF** adaugă paginile altui PDF la final.
 - **Pagină goală (+)** inserează o pagină A4 albă după pagina curentă.
 
-### 7. Salvează
+### 7. Printează (opțional)
+Apasă **Printează** (lângă Salvează). Se deschide fereastra de printare a browserului cu documentul și toate modificările. Alege imprimanta și apasă Print.
+
+### 8. Salvează
 Apasă **Salvează PDF** (dreapta sus). Fișierul se descarcă cu numele `numele-tău-editat.pdf`.
 Originalul rămâne neatins.
 
