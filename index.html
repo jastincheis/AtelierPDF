@@ -869,7 +869,7 @@ $("#bPrint").onclick = async () => {
       const pg = await doc.getPage(i); const vp = pg.getViewport({ scale: 200 / 72 });
       const c = document.createElement("canvas"); c.width = Math.floor(vp.width); c.height = Math.floor(vp.height);
       const ctx = c.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
-      await pg.render({ canvasContext: ctx, viewport: vp }).promise;
+      await pg.render({ canvasContext: ctx, viewport: vp, intent: "print" }).promise;
       const blob = await new Promise(r => c.toBlob(r, "image/jpeg", 0.92)); c.width = c.height = 0;
       const url = URL.createObjectURL(blob); printUrls.push(url);
       const img = new Image(); img.src = url; img.alt = ""; area.append(img); imgs.push(img);
