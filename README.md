@@ -41,7 +41,7 @@ La pornire vezi un formular de exemplu. Îl poți folosi ca să încerci uneltel
 
 | Unealtă | Ce face | Cum o folosești |
 |---|---|---|
-| **Selectează** (V) | Mută, redimensionează și șterge elemente; completezi formulare | Clic pe element ca să-l selectezi, trage ca să-l muți, trage de cercul din colț ca să-l redimensionezi |
+| **Selectează** (V) | Mută, redimensionează și șterge elemente; completezi formulare | Clic pe element ca să-l selectezi, trage ca să-l muți (și pe altă pagină), trage de cercul din colț ca să-l redimensionezi |
 | **Text** (T) | Adaugă text | Clic pe pagină unde vrei textul, apoi scrie. Enter = rând nou. Clic în afară ca să termini |
 | **Desen** (D) | Desen liber cu mâna | Ține apăsat și desenează |
 | **Evidențiază** (H) | Marchează cu culoare transparentă | Trage un dreptunghi peste textul de evidențiat |
