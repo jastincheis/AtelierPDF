@@ -1,3 +1,8 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Atelier PDF</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,7 +26,8 @@
 :root[data-theme="dark"]{
   --desk:#121419; --panel:#1b1e25; --panel-2:#23272f; --fg:#e7e9ef; --muted:#9aa1b3; --line:#2e333d;
   --accent:#8c9bff; --accent-fg:#10132a; --accent-soft:#272d4f; --danger:#ff7a72; --paper-shadow:0 1px 2px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.45); color-scheme:dark}
-html,body{height:100%}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
 body{background:var(--desk);color:var(--fg);font:14px/1.45 var(--ui);overflow:hidden}
 *{box-sizing:border-box}
 button,select,input{font:inherit;color:inherit}
@@ -134,7 +140,8 @@ input.fld[type=checkbox],input.fld[type=radio]{accent-color:#2a44d4;background:t
 }
 @media (prefers-reduced-motion:reduce){.side{transition:none}}
 </style>
-
+</head>
+<body>
 <div class="app">
   <header class="bar">
     <div class="brand"><i aria-hidden="true"></i>Atelier PDF</div>
@@ -895,3 +902,5 @@ async function boot() {
 boot();
 })();
 </script>
+</body>
+</html>
