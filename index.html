@@ -91,6 +91,7 @@ select.sm{height:28px;border:1px solid var(--line);border-radius:7px;background:
 .pgw{display:flex;flex-direction:column;align-items:center;gap:6px}
 .pgn{font:500 11px var(--mono);color:var(--muted)}
 .pg{position:relative;background:#fff;box-shadow:var(--paper-shadow);flex:none}
+.pg.lifted{z-index:4}
 .pg canvas{position:absolute;inset:0;width:100%;height:100%}
 .fl,.ov{position:absolute;inset:0}
 .ov svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
@@ -479,6 +480,7 @@ function onDown(e, v) {
     if (!sel || sel.aid !== a.id) select(v, a);
     const isHandle = !!e.target.closest(".hdl");
     drag = { kind: isHandle ? "resize" : "move", v, a, u0: u, o: JSON.parse(JSON.stringify(a)), pre: JSON.stringify({ pages: S.pages, forms: S.forms }), moved: false };
+    v.el.classList.add("lifted");
     v.ov.setPointerCapture(e.pointerId);
     return;
   }
@@ -513,6 +515,7 @@ function placePreview(d, x, y) {
 }
 window.addEventListener("pointermove", e => {
   if (!drag) return; const v = drag.v; const [x, y] = localPt(v, e);
+  if (drag.kind === "move") autoScroll(e);
   if (drag.kind === "box") { placePreview(drag, x, y); return; }
   const u = toUser(v, x, y);
   if (drag.kind === "ink") { const last = drag.a.pts[drag.a.pts.length - 1]; if (Math.hypot(u[0] - last[0], u[1] - last[1]) * v.s < 1.5) return; drag.a.pts.push(u); drawOverlay(v); return; }
@@ -530,9 +533,45 @@ window.addEventListener("pointermove", e => {
   }
   drawOverlay(v);
 });
+function autoScroll(e) {
+  const r = ws.getBoundingClientRect(); const edge = 48;
+  if (e.clientY > r.bottom - edge) ws.scrollTop += 14; else if (e.clientY < r.top + edge) ws.scrollTop -= 14;
+}
+function pageAt(cx, cy) {
+  for (const v of views.values()) { const b = v.el.getBoundingClientRect(); if (cx >= b.left && cx <= b.right && cy >= b.top && cy <= b.bottom) return v; }
+  return null;
+}
+// move an annotation from page view v to page view nv, keeping its on-screen position
+function transferAnn(v, nv, a) {
+  const ob = v.el.getBoundingClientRect(), nb = nv.el.getBoundingClientRect();
+  const conv = (ux, uy) => { const d = toView(v, ux, uy); return toUser(nv, d[0] + ob.left - nb.left, d[1] + ob.top - nb.top); };
+  if (a.type === "ink") a.pts = a.pts.map(q => conv(q[0], q[1]));
+  else {
+    const n = conv(a.x, a.y); a.x = n[0]; a.y = n[1];
+    a.rot = norm(nv.R - (v.R - a.rot));
+    if (a.type !== "text") { a.w *= v.s / nv.s; a.h *= v.s / nv.s; }
+    else a.size = Math.round(a.size * v.s / nv.s * 2) / 2;
+  }
+  v.p.anns = v.p.anns.filter(x => x.id !== a.id); nv.p.anns.push(a);
+  // keep the whole item on the new page
+  if (a.type !== "ink") {
+    const tl = toView(nv, a.x, a.y); const w = (a.w || 0) * nv.s, h = (a.h || a.size * 1.2) * nv.s;
+    const cx = Math.max(0, Math.min(nv.vp.width - w, tl[0])), cy = Math.max(0, Math.min(nv.vp.height - h, tl[1]));
+    if (cx !== tl[0] || cy !== tl[1]) { const u = toUser(nv, cx, cy); a.x = u[0]; a.y = u[1]; }
+  }
+  sel = { pid: nv.pid, aid: a.id };
+  drawOverlay(v); drawOverlay(nv); updateProps();
+}
+window.addEventListener("pointercancel", () => { document.querySelectorAll(".pg.lifted").forEach(x => x.classList.remove("lifted")); });
 window.addEventListener("pointercancel", () => { if (drag && drag.pv) drag.pv.remove(); if (drag && drag.kind === "ink") { undoStack.push(drag.pre); $("#bUndo").disabled = false; } drag = null; });
 window.addEventListener("pointerup", e => {
   if (!drag) return; const d = drag; drag = null; const v = d.v;
+  v.el.classList.remove("lifted");
+  if (d.kind === "move" && d.moved) {
+    const nv = pageAt(e.clientX, e.clientY);
+    if (nv && nv !== v) { transferAnn(v, nv, d.a); toast("Mutat pe pagina " + (S.pages.indexOf(nv.p) + 1) + "."); }
+    return;
+  }
   if (d.kind === "box") {
     const [x, y] = localPt(v, e); const r = placePreview(d, x, y); d.pv.remove();
     if (r.W < 4 || r.H < 4) return;
