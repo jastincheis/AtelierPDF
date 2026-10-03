@@ -47,8 +47,8 @@ La pornire vezi un formular de exemplu. Îl poți folosi ca să încerci uneltel
 | **Evidențiază** (H) | Marchează cu culoare transparentă | Trage un dreptunghi peste textul de evidențiat |
 | **Formă** (R) | Dreptunghi cu contur | Trage pe pagină |
 | **Acoperă** | Ascunde conținut existent sub un dreptunghi alb | Trage peste zona de ascuns |
-| **Imagine** | Inserează o poză (PNG, JPG, WEBP, GIF) | Alegi fișierul; apare pe pagina curentă, apoi o muți și o redimensionezi |
-| **Semnătură** | Semnătură desenată | Semnezi în chenar și apeși **Plasează semnătura** |
+| **Imagine** | Inserează o poză (PNG, JPG, WEBP, GIF) | Alegi fișierul, apoi dai clic pe pagină acolo unde o vrei |
+| **Semnătură** | Semnătură desenată | Semnezi în chenar, apeși **Plasează semnătura**, apoi dai clic pe pagină (oricare) acolo unde o vrei |
 
 ### 3. Ajustează culoarea și mărimea
 Pe al doilea rând alegi **culoarea**, **grosimea** liniei (pentru desen și forme) și **mărimea textului**.
@@ -96,4 +96,4 @@ Originalul rămâne neatins.
 - La salvare, câmpurile de formular pe care le-ai completat devin parte fixă din pagină și nu mai pot fi editate.
 - PDF-urile protejate cu parolă nu pot fi modificate. Deschide întâi o copie fără parolă.
 - **Acoperă** ascunde vizual conținutul, dar textul original rămâne în fișier. Pentru date confidențiale, folosește un program de redactare dedicat.
-- Elementele adăugate rămân editabile doar cât timp pagina e deschisă. După salvare, PDF-ul rezultat e un fișier obișnuit.
+- Poți printa PDF-ul salvat cu toate modificările (deschizi fișierul descărcat și apeși Ctrl+P). Elementele adăugate nu mai pot fi mutate sau modificate în program după salvare, dar apar în fișier și pe hârtie.

@@ -101,6 +101,9 @@ body[data-tool="select"] .ov .hit{pointer-events:stroke;cursor:move}
 body:not([data-tool="select"]) .ov{pointer-events:auto;touch-action:none;cursor:crosshair}
 body:not([data-tool="select"]) .ov .it{pointer-events:none}
 body[data-tool="text"] .ov{cursor:text}
+body[data-tool="place"] .ov{cursor:copy}
+.ghost{position:fixed;z-index:12;pointer-events:none;opacity:.65;outline:1.5px dashed #2a44d4}
+.ghost img{width:100%;height:100%;display:block}
 body[data-tool="text"] .ov .it-text{pointer-events:auto}
 body:not([data-tool="select"]) .fl{pointer-events:none}
 .it{position:absolute;transform-origin:0 0}
@@ -199,7 +202,7 @@ input.fld[type=checkbox],input.fld[type=radio]{accent-color:#2a44d4;background:t
 <div class="scrim" id="sigModal" hidden>
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="sigT">
     <h2 id="sigT">Semnătura ta</h2>
-    <p>Semnează cu mouse-ul, degetul sau stylus-ul. O plasăm pe pagina curentă, apoi o poți muta și redimensiona.</p>
+    <p>Semnează cu mouse-ul, degetul sau stylus-ul. După ce apeși „Plasează”, dai clic pe pagina și locul unde o vrei.</p>
     <canvas class="pad" id="pad"></canvas>
     <div class="mrow" id="sigPrevRow" hidden><span class="plabel">Folosită recent</span></div>
     <div class="mrow"><div class="swatches" id="sigColors"></div><div class="spacer"></div>
@@ -480,6 +483,7 @@ function onDown(e, v) {
     return;
   }
   e.preventDefault();
+  if (tool === "place") { if (pending) placeAt(v, x, y); return; }
   if (tool === "text") {
     if (a && a.type === "text") { select(v, a); startEdit(v, a); return; }
     snap();
@@ -574,18 +578,40 @@ function deleteSel() {
 
 // ---------- inserting images & signatures ----------
 function currentView() { pickCurrent(); return views.get(curPid) || views.values().next().value; }
+let pending = null, ghost = null;
+function placeSize(v, p) {
+  const maxW = (p.type === "sig" ? 0.32 : 0.45) * v.vp.width; let w = Math.min(maxW, p.natW), h = w * p.natH / p.natW;
+  if (h > v.vp.height * 0.5) { h = v.vp.height * 0.5; w = h * p.natW / p.natH; }
+  return [w, h];
+}
 function insertImage(dataUrl, natW, natH, type) {
-  const v = currentView(); if (!v) return;
-  const id = uid(); S.images[id] = dataUrl;
-  const maxW = (type === "sig" ? 0.32 : 0.45) * v.vp.width; let w = Math.min(maxW, natW), h = w * natH / natW;
-  if (h > v.vp.height * 0.5) { h = v.vp.height * 0.5; w = h * natW / natH; }
-  const wsr = ws.getBoundingClientRect(), pr = v.el.getBoundingClientRect();
-  const cy = Math.max(h / 2 + 10, Math.min(v.vp.height - h / 2 - 10, wsr.top + wsr.height / 2 - pr.top));
-  const L = (v.vp.width - w) / 2, T = cy - h / 2; const tl = toUser(v, L, T);
+  setTool("select");
+  pending = { url: dataUrl, natW, natH, type };
+  tool = "place"; document.body.dataset.tool = "place";
+  document.querySelectorAll(".tool").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.tool === type || (type === "image" && b.dataset.tool === "image"))));
+  ghost = document.createElement("div"); ghost.className = "ghost"; ghost.hidden = true;
+  const img = document.createElement("img"); img.src = dataUrl; img.alt = ""; ghost.append(img); document.body.append(ghost);
+  toast(type === "sig" ? "Dă clic pe pagină acolo unde vrei semnătura. Esc anulează." : "Dă clic pe pagină acolo unde vrei imaginea. Esc anulează.");
+}
+function cancelPlacing() { pending = null; if (ghost) { ghost.remove(); ghost = null; } }
+window.addEventListener("pointermove", e => {
+  if (!pending || !ghost) return;
+  const pgEl = e.target.closest && e.target.closest(".pg"); const v = pgEl && views.get(pgEl.dataset.pid);
+  if (!v) { ghost.hidden = true; return; }
+  const [w, h] = placeSize(v, pending);
+  ghost.hidden = false; ghost.style.width = w + "px"; ghost.style.height = h + "px";
+  ghost.style.left = (e.clientX - w / 2) + "px"; ghost.style.top = (e.clientY - h / 2) + "px";
+});
+function placeAt(v, x, y) {
+  const p = pending; cancelPlacing();
+  const id = uid(); S.images[id] = p.url;
+  const [w, h] = placeSize(v, p);
+  const L = Math.max(0, Math.min(v.vp.width - w, x - w / 2)), T = Math.max(0, Math.min(v.vp.height - h, y - h / 2));
+  const tl = toUser(v, L, T);
   snap();
-  const a = { id: uid(), type, img: id, x: tl[0], y: tl[1], w: w / v.s, h: h / v.s, rot: v.R };
+  const a = { id: uid(), type: p.type, img: id, x: tl[0], y: tl[1], w: w / v.s, h: h / v.s, rot: v.R };
   v.p.anns.push(a); setTool("select"); sel = { pid: v.pid, aid: a.id }; drawOverlay(v); updateProps();
-  toast(type === "sig" ? "Semnătura e pe pagină. Trage de ea ca s-o muți, de colț ca s-o redimensionezi." : "Imaginea e pe pagină. Trage de colț ca s-o redimensionezi.");
+  toast("Gata. Trage de element ca să-l muți, de cercul din colț ca să-l redimensionezi.");
 }
 function loadImg(src) { return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; }); }
 $("#fImg").addEventListener("change", async e => {
@@ -776,6 +802,7 @@ $("#bSave").onclick = async () => {
 function setTool(t) {
   if (editing) finishEdit();
   if (t !== "select") clearSel();
+  cancelPlacing();
   tool = t; document.body.dataset.tool = t === "image" || t === "sig" ? "select" : t;
   document.querySelectorAll(".tool").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.tool === t)));
   updateProps();
