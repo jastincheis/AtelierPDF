@@ -409,7 +409,7 @@ function drawOverlay(v) {
 }
 function itemEl(v, a, isSel) {
   const { s, R } = v;
-  const el = document.createElement("div"); el.className = "it it-" + (a.type === "sig" ? "img" : a.type) + (isSel ? " sel" : ""); el.dataset.a = a.id;
+  const el = document.createElement("div"); el.className = "it it-" + (a.type === "sig" || a.type === "image" ? "img" : a.type) + (isSel ? " sel" : ""); el.dataset.a = a.id;
   const tl = toView(v, a.x, a.y);
   el.style.left = tl[0] + "px"; el.style.top = tl[1] + "px";
   const d = norm(R - a.rot); if (d) el.style.transform = "rotate(" + d + "deg)";
